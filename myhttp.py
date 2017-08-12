@@ -117,8 +117,8 @@ class http_server(object):
             myapp = self.frame.app()
             print(myapp)
             environ = {}
-            environ['PATH'] = request_url
-            print(environ['PATH'])
+            environ['PATH_INFO'] = request_url
+            print(environ['PATH_INFO'])
             content = myapp.app(environ,self.set_app_header)
             print(content.decode('utf-8'))
 

@@ -16,13 +16,21 @@ class app(object):
             content = f.read()
         return content
 
+    def center(self,template_file):
+        with open(template_file,'rb') as f:
+            content = f.read()
+        return content
+
 
     def app(self,environ,set_headers):
-        attr = environ['PATH'].replace('.py','')
+        attr = environ['PATH_INFO'].replace('.py','')
         if hasattr(app,attr[1:]):
             file_name = self.g_templates_dir + attr + '.html'
             print(file_name)
-            self.content = self.index(file_name)
+            #self.content = self.index(file_name)
+            func = getattr(app,attr[1:])
+            print(func)
+            self.content = func(self,file_name)
             #print(self.content)
             header_status = '200 OK\r\n'
             header_body = [('Content-Type','text/html')]

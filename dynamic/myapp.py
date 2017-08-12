@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 #auth:zhiyi
 import time
+import re
 
 class app(object):
     def __init__(self):
@@ -10,11 +11,16 @@ class app(object):
         self.g_static_dir = './static'
 
         self.content = None
+        self.stock_info = '''<td>01</td><td>600028</td><td>中国石化</td><td>-1.15%</td><td>0.16%</td><td>6.02</td><td>6.04</td><td>20170812</td><td></td>'''
 
     def index(self,template_file):
         with open(template_file,'rb') as f:
             content = f.read()
-        return content
+
+        content = content.decode('utf-8')
+        content = re.sub('\{content\}',self.stock_info,content)
+        print(content)
+        return content.encode('utf-8')
 
     def center(self,template_file):
         with open(template_file,'rb') as f:

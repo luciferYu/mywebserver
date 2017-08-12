@@ -41,7 +41,15 @@ class app(object):
             #print('-' * 50)
             #print(set_headers)
             set_headers(header_status,header_body)
-        return self.content
+            return self.content
+        else:
+            with open('./templates/404.html', 'rb') as f:
+                content = f.read()
+                response_status = '404 Not Found\r\n'
+                response_header = [('Content_Length:',len(content))]
+                set_headers(response_status, response_header)
+            return content
+
 
 
 

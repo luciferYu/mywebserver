@@ -115,14 +115,13 @@ class http_server(object):
             self.frame = __import__('myapp')
             #app = getattr(self.frame, 'app')
             myapp = self.frame.app()
-            print(myapp)
+            #print(myapp)
             environ = {}
             environ['PATH_INFO'] = request_url
-            print(environ['PATH_INFO'])
+            #print(environ['PATH_INFO'])
             content = myapp.app(environ,self.set_app_header)
-            print(content.decode('utf-8'))
-
-
+            await asyncio.sleep(0.001)
+            #print(content.decode('utf-8'))
             #self.response_header += '\r\n'
             response_body = content
             client_conn.send(bytes(self.response_header, encoding='gbk'))

@@ -7,6 +7,7 @@ import asyncio
 from configparser import ConfigParser
 import logging
 from time import perf_counter
+import sys
 
 class http_server(object):
     def __init__(self):
@@ -15,16 +16,22 @@ class http_server(object):
         self.cfg.read('httpconfig.ini')
         self.ipaddress = self.cfg.get('network', 'ip_address')
         self.port = self.cfg.getint('network','port')
-        self.documents_root = self.cfg.get('dir', 'documents_root')
+        #self.documents_root = self.cfg.get('dir', 'documents_root')
 
         self.http_socket = socket.socket(socket.AF_INET)  # 初始化套接字
         self.http_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)  # 让套接字复用未释放端口
         self.http_socket.bind((self.ipaddress,self.port))  # 绑定 IP 和端口
-        self.response_header = ''
+        self.response_header = []
         #self.documents_root = './html'
 
+        self.g_templates_dir = './templates'
+        self.g_dynamic_dir = './dynamic'
+        self.g_static_dir = './static'
+
+        sys.path.append(self.g_dynamic_dir)
 
         logging.basicConfig(filename='myhttpd.log', level=logging.INFO, format='%(levelname)s:%(asctime)s:%(message)s')
+
 
 
 
@@ -70,8 +77,10 @@ class http_server(object):
         if request_url == '/':
             request_url = '/index.html'
         if not request_url.endswith('.py'):
-            file_name = self.documents_root + request_url
+            file_name = self.g_static_dir + request_url
+            print('-' * 50)
             print(file_name)
+            print('-' * 50)
             if os.path.exists(file_name):
                 with open(file_name, 'rb') as f:
                     content = f.read()
@@ -91,7 +100,7 @@ class http_server(object):
                     print('发送数据错误')
                     logging.error('e')
             else:
-                with open('./html/404.html', 'rb') as f:
+                with open('./templates/404.html', 'rb') as f:
                     content = f.read()
                     await asyncio.sleep(0.001)
                 response_header = 'HTTP/1.1 404 Not Found\r\n'
@@ -103,32 +112,34 @@ class http_server(object):
                 client_conn.send(response_body)
                 await asyncio.sleep(0.001)
         else:
-            self.frame = __import__('myappv1')
-            app_response_time = getattr(self.frame, 'response_time')
-            content = app_response_time(self.set_app_header,request_url)
-            print(self.response_header)
-            self.response_header += 'Content_Length: %d\r\n' % len(content.encode('utf-8'))
-            #self.response_header += '\r\n'
-            response_body = content.encode('utf-8')
+            self.frame = __import__('myapp')
+            #app = getattr(self.frame, 'app')
+            myapp = self.frame.app()
+            print(myapp)
+            environ = {}
+            environ['PATH'] = request_url
+            print(environ['PATH'])
+            content = myapp.app(environ,self.set_app_header)
+            print(content.decode('utf-8'))
 
-            client_conn.send(bytes(self.response_header, encoding='utf-8'))
+
+            #self.response_header += '\r\n'
+            response_body = content
+            client_conn.send(bytes(self.response_header, encoding='gbk'))
             client_conn.send(response_body)
             #self.response_header = ''
 
         #client_conn.close()
 
-    async def set_app_header(self,headers):
-        self.response_header = ''
-        header_status_code = slice(0)
-        response_header = 'HTTP/1.1 %s\r\n' % (headers[header_status_code],)
-        for head in headers:
-                response_header += head
-        response_header += '\r\n'  # 追加响应头分割
-        print(response_header)
-        self.response_header = response_header
+    def set_app_header(self,status_code,headers):
+        response_status_code = 'HTTP/1.1 ' + status_code
+        self.response_header = response_status_code
+        for k,v in headers:
+            self.response_header += ('%s:%s\r\n' % (k,v))
+        self.response_header += '\r\n'
+        print(self.response_header)
 
-
-
+        #self.response_header = [status_code,headers]
 
 
 

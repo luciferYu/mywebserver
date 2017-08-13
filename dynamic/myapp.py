@@ -99,10 +99,24 @@ class app(object):
         format_data = ''
         for stock in data:
             tmp_row_data = ''
-            for field in stock:
-                tmp_row_data += self.add_td(field)
+            for i,field in enumerate(stock):
+                if i == 3:
+                    tmp_row_data += self.add_color_td(field)
+                else:
+                    tmp_row_data += self.add_td(field)
             format_data += self.add_tr(tmp_row_data)
         return format_data
+
+
+    def add_color_td(self,string):
+        if float(string) > 0:
+            tmp_string = '%s' % string
+            return '<td style="color:red;">' + tmp_string + "</td>"
+        elif float(string) < 0:
+            tmp_string = '%s' % string
+            return '<td style="color:green;">' + tmp_string + "</td>"
+
+
 
 
     def add_td(self,string):

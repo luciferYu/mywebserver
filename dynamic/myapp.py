@@ -3,8 +3,10 @@
 #auth:zhiyi
 import time
 import re
+import pymysql
 import asyncio
 from functools import wraps
+
 
 
 def route(url,route_dict):
@@ -24,7 +26,9 @@ class app(object):
         self.g_static_dir = './static'
 
         self.content = None
-        self.stock_info = '''<td>01</td><td>600028</td><td>中国石化</td><td>-1.15%</td><td>0.16%</td><td>6.02</td><td>6.04</td><td>20170812</td><td></td>'''
+        #self.stock_info = '''<td>01</td><td>600028</td><td>中国石化</td><td>-1.15%</td><td>0.16%</td><td>6.02</td><td>6.04</td><td>20170812</td><td></td>'''
+
+        self.stock_info_list = ['01','600028','中国石化','-1.15%','0.16%','6.02','6.04','20170812','']
 
 
     @route('/index.py',route_dict)
@@ -33,6 +37,8 @@ class app(object):
             content = f.read()
 
         content = content.decode('utf-8')
+        data = self.get_data_from_db()
+        self.stock_info = self.deal_with_data(data)
         content = re.sub('\{content\}',self.stock_info,content)
         print(content)
         return content.encode('utf-8')
@@ -77,9 +83,42 @@ class app(object):
                 set_headers(response_status, response_header)
             return content + str(e).encode('gbk')
 
+    def get_data_from_db(self):
+        conn = pymysql.connect(host='localhost', user='yuzhiyi', password='abc123,', db='mysql', charset='utf8')
+        cur = conn.cursor()
+        cur.execute('use python')
+        cur.execute('select * from T_STOCK')
+        stock_info = cur.fetchall()
+        for info in stock_info:
+            print(info)
+        cur.close()
+        conn.close()
+        return stock_info
+
+    def deal_with_data(self,data):
+        format_data = ''
+        for stock in data:
+            tmp_row_data = ''
+            for field in stock:
+                tmp_row_data += self.add_td(field)
+            format_data += self.add_tr(tmp_row_data)
+        return format_data
+
+
+    def add_td(self,string):
+        tmp_string = '%s' % string
+        return '<td>' + tmp_string + '</td>'
+
+    def add_tr(self,string):
+        return '<tr>' + string + '</tr>'
+
 
 
 
 
 if __name__ == '__main__':
-    pass
+    a = app()
+    data = a.get_data_from_db()
+    stock_info = a.deal_with_data(data)
+    print(stock_info)
+

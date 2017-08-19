@@ -76,29 +76,36 @@ class http_server(object):
     async def handle_GET_method(self,client_conn,request_url,starttime):
         if request_url == '/':
             request_url = '/index.html'
-        if not request_url.endswith('.py'):
-            file_name = self.g_static_dir + request_url
-            print('-' * 50)
-            print(file_name)
-            print('-' * 50)
-            if os.path.exists(file_name):
-                with open(file_name, 'rb') as f:
+        if  request_url.endswith('.html'):
+            self.frame = __import__('myapp')
+            #app = getattr(self.frame, 'app')
+            myapp = self.frame.app()
+            #print(myapp)
+            environ = {}
+            environ['PATH_INFO'] = request_url
+            #print(environ['PATH_INFO'])
+            content = myapp.app(environ,self.set_app_header)
+            await asyncio.sleep(0.001)
+            response_body = content
+            client_conn.send(bytes(self.response_header, encoding='gbk'))
+
+            client_conn.send(response_body)
+            #await asyncio.sleep(0.001)
+        else:
+            request_url = self.g_static_dir + request_url
+            if  os.path.exists(request_url):
+                print(request_url)
+                with open(request_url,'rb') as f:
                     content = f.read()
-                await asyncio.sleep(0.001)
-                response_header = 'HTTP/1.1 200 OK\r\n'  # 编辑响应头
+                    await asyncio.sleep(0.001)
+                response_header = 'HTTP/1.1 200 OK\r\n'
                 response_header += 'Content_Length: %d\r\n' % len(content)
                 response_header += '\r\n'  # 追加响应头分割
-                response_body = content  # 编辑响应体
-                # 发送响应数据
-                try:
-                    client_conn.send(bytes(response_header, encoding='gbk'))
-                    client_conn.send(response_body)
-                    await asyncio.sleep(0.001)
-                    endtime = perf_counter()
-                    print(endtime - starttime)
-                except Exception as e:
-                    print('发送数据错误')
-                    logging.error('e')
+
+                response_body = content
+                client_conn.send(bytes(response_header, encoding='gbk'))
+                client_conn.send(response_body)
+                #await asyncio.sleep(0.001)
             else:
                 with open('./templates/404.html', 'rb') as f:
                     content = f.read()
@@ -110,25 +117,11 @@ class http_server(object):
                 response_body = content
                 client_conn.send(bytes(response_header, encoding='gbk'))
                 client_conn.send(response_body)
-                await asyncio.sleep(0.001)
-        else:
-            self.frame = __import__('myapp')
-            #app = getattr(self.frame, 'app')
-            myapp = self.frame.app()
-            #print(myapp)
-            environ = {}
-            environ['PATH_INFO'] = request_url
-            #print(environ['PATH_INFO'])
-            content = myapp.app(environ,self.set_app_header)
-            await asyncio.sleep(0.001)
-            #print(content.decode('utf-8'))
-            #self.response_header += '\r\n'
-            response_body = content
-            client_conn.send(bytes(self.response_header, encoding='gbk'))
-            client_conn.send(response_body)
-            #self.response_header = ''
+                #await asyncio.sleep(0.001)
 
-        #client_conn.close()
+
+
+        client_conn.close()
 
     def set_app_header(self,status_code,headers):
         response_status_code = 'HTTP/1.1 ' + status_code

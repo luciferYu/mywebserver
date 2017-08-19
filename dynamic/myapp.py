@@ -28,43 +28,55 @@ class app(object):
         self.content = None
         #self.stock_info = '''<td>01</td><td>600028</td><td>中国石化</td><td>-1.15%</td><td>0.16%</td><td>6.02</td><td>6.04</td><td>20170812</td><td></td>'''
 
-        self.stock_info_list = ['01','600028','中国石化','-1.15%','0.16%','6.02','6.04','20170812','']
+        #self.stock_info_list = ['01','600028','中国石化','-1.15%','0.16%','6.02','6.04','20170812','']
+        self.conn = pymysql.connect(host='localhost', user='yuzhiyi', password='abc123,', db='stock_db', charset='utf8')
+        self.cur = self.conn.cursor()
 
+    def __del__(self):
+        self.cur.close()
+        self.conn.close()
 
-    @route('/index.py',route_dict)
+    @route('/index.html',route_dict)
     def index(self,template_file):
         with open(template_file,'rb') as f:
             content = f.read()
 
         content = content.decode('utf-8')
-        data = self.get_data_from_db()
+        data = self.get_index_data_from_db()
         data = sorted(data,key=lambda x:x[3],reverse=True)
         self.stock_info = self.deal_with_data(data)
         content = re.sub('\{%content%\}',self.stock_info,content)
         print(content)
         return content.encode('utf-8')
 
-    @route('/center.py',route_dict)
+    @route('/center.html',route_dict)
     def center(self,template_file):
         with open(template_file,'rb') as f:
             content = f.read()
-        return content
+
+        content = content.decode('utf-8')
+        data = self.get_center_data_from_db()
+
+        content = re.sub('\{%content%\}',str(data), content)
+
+
+        return content.encode('utf-8')
 
 
     def app(self,environ,set_headers):
         try:
             #if environ['PATH_INFO'] in app.route_dict.keys():
                 file_name = environ['PATH_INFO']
-                print(file_name)
-                file_name = file_name.replace('.py','.html')
+                #print(file_name)
+                #file_name = file_name.replace('.py','.html')
 
                 file_name = self.g_templates_dir + file_name
-                print(file_name)
+                #print(file_name)
                 #self.content = self.index(file_name)
                 func = app.route_dict[environ['PATH_INFO']]
-                print(func)
+                #print(func)
                 self.content = func(self,file_name)
-                print(self.content)
+                #print(self.content)
                 #print(self.content)
                 header_status = '200 OK\r\n'
                 header_body = [('Content-Type','text/html')]
@@ -84,16 +96,20 @@ class app(object):
                 set_headers(response_status, response_header)
             return content + str(e).encode('gbk')
 
-    def get_data_from_db(self):
-        conn = pymysql.connect(host='localhost', user='yuzhiyi', password='abc123,', db='stock_db', charset='utf8')
-        cur = conn.cursor()
-        cur.execute('select * from info')
-        stock_info = cur.fetchall()
-        for info in stock_info:
-            print(info)
-        cur.close()
-        conn.close()
+    def get_index_data_from_db(self):
+        self.cur.execute('select * from info')
+        stock_info = self.cur.fetchall()
+        #for info in stock_info:
+            #print(info)
         return stock_info
+
+
+    def get_center_data_from_db(self):
+        self.cur.execute('select info.code,info.short,info.chg,info.turnover,info.price,focus.note_info from focus INNER JOIN info on focus.info_id = info.id;')
+        focus_info = self.cur.fetchall()
+        #for info in stock_info:
+            #print(info)
+        return focus_info
 
     def deal_with_data(self,data):
         format_data = ''
@@ -104,7 +120,7 @@ class app(object):
                     tmp_row_data += self.add_color_td(field)
                 else:
                     tmp_row_data += self.add_td(field)
-            tmp_row_data += '''<td><input type='button' value='添加自选'></td>'''
+            tmp_row_data += '''<td><input type='button' value='添加自选' id="toAdd" name="toAdd" systemidvaule="%s"></td>''' % stock[2]
             format_data += self.add_tr(tmp_row_data)
         return format_data
 
@@ -133,7 +149,7 @@ class app(object):
 
 if __name__ == '__main__':
     a = app()
-    data = a.get_data_from_db()
+    data = a.get_index_data_from_db()
     stock_info = a.deal_with_data(data)
     print(stock_info)
 

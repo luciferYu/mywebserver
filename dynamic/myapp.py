@@ -121,7 +121,7 @@ class app(object):
                     tmp_row_data += self.add_color_td(field)
                 else:
                     tmp_row_data += self.add_td(field)
-            tmp_row_data += '''<td><input type='button' value='添加自选' id="toAdd" name="toAdd" systemidvaule="%s"></td>''' % stock[2]
+            tmp_row_data += '''<td><input type='button' value='添加自选' id="toAdd" name="toAdd" systemidvaule="%s"></td>''' % stock[1]
             format_data += self.add_tr(tmp_row_data)
         return format_data
 
@@ -138,7 +138,7 @@ class app(object):
             s ='''
             <td><a type = "button" class ="btn btn-default btn-xs" href="/update/%s.html"><span class ="glyphicon glyphicon-star" aria-hidden="true"></span>修改</a></td>
             <td><input type = "button" value = "删除" id = "toDel" name = "toDel" systemidvaule = "%s"></ td>
-            ''' % (stock[2],stock[2])
+            ''' % (stock[0],stock[0])
             print(s)
             tmp_row_data += s
             format_data += self.add_tr(tmp_row_data)

@@ -4,6 +4,7 @@
 import time
 import re
 import pymysql
+import urllib.parse
 import asyncio
 from functools import wraps
 
@@ -62,6 +63,18 @@ class app(object):
         self.conn.commit()
         return '删除成功'.encode('utf-8')
 
+    @route(r'/update/(\d+)/(.*?)\.html', route_dict)
+    def update_note_info(self, template_file):
+        stock_code = ''
+        print(template_file)
+        code = re.match(r'./templates/update/(\d+)/(.*?)\.html', template_file).group(1)
+        note_info = re.match(r'./templates/update/(\d+)/(.*?)\.html', template_file).group(2)
+        note_info_new = urllib.parse.unquote(note_info)
+        # print(code)
+        self.cur.execute('update focus set note_info=%s where focus.info_id = (select id from info where code=%s );', (note_info_new,code))
+        self.conn.commit()
+        return '更新成功'.encode('utf-8')
+
 
     @route(r'/index.html',route_dict)
     def index(self,template_file):
@@ -90,6 +103,22 @@ class app(object):
 
         return content.encode('utf-8')
 
+    @route(r'/update/(\d+)\.html', route_dict)
+    def update(self, template_file):
+        with open('./templates/update.html', 'rb') as f:
+            content = f.read()
+
+        content = content.decode('utf-8')
+        code = re.match(r'./templates/update/(\d+)\.html', template_file).group(1)
+        self.cur.execute('select focus.note_info from focus,info where focus.info_id = info.id and info.code = %s;',code)
+        note_info = self.cur.fetchone()[0]
+        note_info_new = urllib.parse.unquote(note_info)
+        #data = self.deal_center_with_data(data)
+        # print(data)
+        #content = re.sub('\{%content%\}', data, content)
+        content = re.sub('\{%code%\}',code, content)
+        content = re.sub('\{%note_info%\}', note_info, content)
+        return content.encode('utf-8')
 
     def app(self,environ,set_headers):
         try:

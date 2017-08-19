@@ -40,7 +40,7 @@ class app(object):
         data = self.get_data_from_db()
         data = sorted(data,key=lambda x:x[3],reverse=True)
         self.stock_info = self.deal_with_data(data)
-        content = re.sub('\{content\}',self.stock_info,content)
+        content = re.sub('\{%content%\}',self.stock_info,content)
         print(content)
         return content.encode('utf-8')
 
@@ -85,10 +85,9 @@ class app(object):
             return content + str(e).encode('gbk')
 
     def get_data_from_db(self):
-        conn = pymysql.connect(host='localhost', user='yuzhiyi', password='abc123,', db='mysql', charset='utf8')
+        conn = pymysql.connect(host='localhost', user='yuzhiyi', password='abc123,', db='stock_db', charset='utf8')
         cur = conn.cursor()
-        cur.execute('use python')
-        cur.execute('select * from T_STOCK')
+        cur.execute('select * from info')
         stock_info = cur.fetchall()
         for info in stock_info:
             print(info)
@@ -101,19 +100,20 @@ class app(object):
         for stock in data:
             tmp_row_data = ''
             for i,field in enumerate(stock):
-                if i == 3:
+                if i in (3,4):
                     tmp_row_data += self.add_color_td(field)
                 else:
                     tmp_row_data += self.add_td(field)
+            tmp_row_data += '''<td><input type='button' value='添加自选'></td>'''
             format_data += self.add_tr(tmp_row_data)
         return format_data
 
 
     def add_color_td(self,string):
-        if float(string) > 0:
+        if float(string[:-1]) > 0:
             tmp_string = '%s' % string
             return '<td style="color:red;">' + tmp_string + "</td>"
-        elif float(string) < 0:
+        elif float(string[:-1]) < 0:
             tmp_string = '%s' % string
             return '<td style="color:green;">' + tmp_string + "</td>"
 

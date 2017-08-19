@@ -56,8 +56,9 @@ class app(object):
 
         content = content.decode('utf-8')
         data = self.get_center_data_from_db()
-
-        content = re.sub('\{%content%\}',str(data), content)
+        data = self.deal_center_with_data(data)
+        #print(data)
+        content = re.sub('\{%content%\}',data, content)
 
 
         return content.encode('utf-8')
@@ -105,7 +106,7 @@ class app(object):
 
 
     def get_center_data_from_db(self):
-        self.cur.execute('select info.code,info.short,info.chg,info.turnover,info.price,focus.note_info from focus INNER JOIN info on focus.info_id = info.id;')
+        self.cur.execute('select info.code,info.short,info.chg,info.turnover,info.price,info.highs,focus.note_info from focus INNER JOIN info on focus.info_id = info.id;')
         focus_info = self.cur.fetchall()
         #for info in stock_info:
             #print(info)
@@ -121,6 +122,25 @@ class app(object):
                 else:
                     tmp_row_data += self.add_td(field)
             tmp_row_data += '''<td><input type='button' value='添加自选' id="toAdd" name="toAdd" systemidvaule="%s"></td>''' % stock[2]
+            format_data += self.add_tr(tmp_row_data)
+        return format_data
+
+
+    def deal_center_with_data(self,data):
+        format_data = ''
+        for stock in data:
+            tmp_row_data = ''
+            for field in stock:
+                if str(field).endswith('%'):
+                    tmp_row_data += self.add_color_td(field)
+                else:
+                    tmp_row_data += self.add_td(field)
+            s ='''
+            <td><a type = "button" class ="btn btn-default btn-xs" href="/update/%s.html"><span class ="glyphicon glyphicon-star" aria-hidden="true"></span>修改</a></td>
+            <td><input type = "button" value = "删除" id = "toDel" name = "toDel" systemidvaule = "%s"></ td>
+            ''' % (stock[2],stock[2])
+            print(s)
+            tmp_row_data += s
             format_data += self.add_tr(tmp_row_data)
         return format_data
 

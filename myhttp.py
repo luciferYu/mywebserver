@@ -94,7 +94,7 @@ class http_server(object):
         else:
             request_url = self.g_static_dir + request_url
             if  os.path.exists(request_url):
-                print(request_url)
+                #print(request_url)
                 with open(request_url,'rb') as f:
                     content = f.read()
                     await asyncio.sleep(0.001)

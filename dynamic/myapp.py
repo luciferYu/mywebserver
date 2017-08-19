@@ -9,6 +9,7 @@ from functools import wraps
 
 
 
+
 def route(url,route_dict):
     def set_func(func):
         route_dict[url] = func
@@ -36,7 +37,33 @@ class app(object):
         self.cur.close()
         self.conn.close()
 
-    @route('/index.html',route_dict)
+    @route(r'/add/(\d+)\.html',route_dict)
+    def add(self,template_file):
+        stock_code = ''
+        print(template_file)
+        code = re.match(r'./templates/add/(\d+)\.html',template_file).group(1)
+        #print(code)
+        self.cur.execute('select info.id from focus,info where focus.info_id = info.id and info.code = %s;',code)
+        ret = self.cur.fetchone()
+        if not ret:
+            self.cur.execute('insert into focus(info_id) select id from info where code=%s ',code)
+            self.conn.commit()
+            return '关注成功'.encode('utf-8')
+        else:
+            return '请不要重复关注'.encode('utf-8')
+
+    @route(r'/del/(\d+)\.html', route_dict)
+    def add(self, template_file):
+        stock_code = ''
+        print(template_file)
+        code = re.match(r'./templates/del/(\d+)\.html', template_file).group(1)
+        # print(code)
+        self.cur.execute('delete from focus where focus.info_id = (select id from info where code=%s );', code)
+        self.conn.commit()
+        return '删除成功'.encode('utf-8')
+
+
+    @route(r'/index.html',route_dict)
     def index(self,template_file):
         with open(template_file,'rb') as f:
             content = f.read()
@@ -49,7 +76,7 @@ class app(object):
         print(content)
         return content.encode('utf-8')
 
-    @route('/center.html',route_dict)
+    @route(r'/center.html',route_dict)
     def center(self,template_file):
         with open(template_file,'rb') as f:
             content = f.read()
@@ -68,15 +95,28 @@ class app(object):
         try:
             #if environ['PATH_INFO'] in app.route_dict.keys():
                 file_name = environ['PATH_INFO']
-                #print(file_name)
+                print(file_name)
                 #file_name = file_name.replace('.py','.html')
 
-                file_name = self.g_templates_dir + file_name
-                #print(file_name)
+
+
+                for k,v in app.route_dict.items():
+                    print('print k v ',k,v)
+                    ret = re.match(k,file_name)
+                    print('print ret',ret)
+                    if ret:
+                        print('in if')
+                        file_name = self.g_templates_dir + file_name
+                        self.content =  v(self,file_name)
+                        print(self.content)
+                        break
+                    else:
+                        pass
                 #self.content = self.index(file_name)
-                func = app.route_dict[environ['PATH_INFO']]
+                #func = app.route_dict[environ['PATH_INFO']]
                 #print(func)
-                self.content = func(self,file_name)
+                #print(file_name)
+                #self.content = func(self,file_name)
                 #print(self.content)
                 #print(self.content)
                 header_status = '200 OK\r\n'
@@ -104,7 +144,6 @@ class app(object):
             #print(info)
         return stock_info
 
-
     def get_center_data_from_db(self):
         self.cur.execute('select info.code,info.short,info.chg,info.turnover,info.price,info.highs,focus.note_info from focus INNER JOIN info on focus.info_id = info.id;')
         focus_info = self.cur.fetchall()
@@ -125,7 +164,6 @@ class app(object):
             format_data += self.add_tr(tmp_row_data)
         return format_data
 
-
     def deal_center_with_data(self,data):
         format_data = ''
         for stock in data:
@@ -137,13 +175,12 @@ class app(object):
                     tmp_row_data += self.add_td(field)
             s ='''
             <td><a type = "button" class ="btn btn-default btn-xs" href="/update/%s.html"><span class ="glyphicon glyphicon-star" aria-hidden="true"></span>修改</a></td>
-            <td><input type = "button" value = "删除" id = "toDel" name = "toDel" systemidvaule = "%s"></ td>
+            <td><input type = "button" value = "删除" id="toDel" name="toDel" systemidvaule="%s"></td>
             ''' % (stock[0],stock[0])
             print(s)
             tmp_row_data += s
             format_data += self.add_tr(tmp_row_data)
         return format_data
-
 
     def add_color_td(self,string):
         if float(string[:-1]) > 0:
@@ -152,9 +189,6 @@ class app(object):
         elif float(string[:-1]) < 0:
             tmp_string = '%s' % string
             return '<td style="color:green;">' + tmp_string + "</td>"
-
-
-
 
     def add_td(self,string):
         tmp_string = '%s' % string

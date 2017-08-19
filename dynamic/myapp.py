@@ -83,10 +83,35 @@ class app(object):
 
         content = content.decode('utf-8')
         data = self.get_index_data_from_db()
-        data = sorted(data,key=lambda x:x[3],reverse=True)
-        self.stock_info = self.deal_with_data(data)
+        data = sorted(data,key=lambda x:x[0])
+
+        page_data = self.add_index_page(len(data))
+
+
+        self.stock_info = self.deal_with_data(data[0:10])
+
         content = re.sub('\{%content%\}',self.stock_info,content)
-        print(content)
+        content = re.sub('\{%page%\}',page_data,content)
+        #print(content)
+        return content.encode('utf-8')
+
+    @route(r'/index/(\d+)\.html', route_dict)
+    def index(self, template_file):
+        with open('./templates/index.html', 'rb') as f:
+            content = f.read()
+        page = re.match(r'./templates/index/(\d+)\.html', template_file).group(1)
+        content = content.decode('utf-8')
+        data = self.get_index_data_from_db()
+        data = sorted(data, key=lambda x: x[0])
+
+        page_data = self.add_index_page(len(data))
+        start_page = int(page)*10 -10
+        end_page = int(page)*10
+        self.stock_info = self.deal_with_data(data[start_page:end_page])
+
+        content = re.sub('\{%content%\}', self.stock_info, content)
+        content = re.sub('\{%page%\}', page_data, content)
+        # print(content)
         return content.encode('utf-8')
 
     @route(r'/center.html',route_dict)
@@ -226,7 +251,12 @@ class app(object):
     def add_tr(self,string):
         return '<tr>' + string + '</tr>'
 
-
+    def add_index_page(self,len):
+        pages = ''
+        for i in range((len//10 +1)):
+            s = '''<a href=/index/%s.html> 第%d页 </a>''' % (i+1,i+1)
+            pages += s
+        return pages
 
 
 

@@ -38,6 +38,7 @@ class app(object):
 
         content = content.decode('utf-8')
         data = self.get_data_from_db()
+        data = sorted(data,key=lambda x:x[3],reverse=True)
         self.stock_info = self.deal_with_data(data)
         content = re.sub('\{content\}',self.stock_info,content)
         print(content)
